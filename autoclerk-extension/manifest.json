@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "AutoClerk - Scholarship Verification Assistant",
+  "version": "1.0.0",
+  "description": "Real-time validation for MAHADBT scholarship applications. Catch errors before submission and log them for review.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://mahadbt.maharashtra.gov.in/*",
+    "https://*.supabase.co/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "AutoClerk - Scholarship Validator"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*.png"],
+      "matches": ["https://mahadbt.maharashtra.gov.in/*"]
+    }
+  ]
+}

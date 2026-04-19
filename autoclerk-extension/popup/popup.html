@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoClerk — Scholarship Validator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup-root">
+
+    <!-- =================== HEADER =================== -->
+    <header class="popup-header">
+      <!-- Logo image -->
+      <div class="popup-logo">
+        <img src="../icons/logo.png" alt="AutoClerk logo" height="28" />
+      </div>
+
+      <!-- Brand name -->
+      <div class="popup-title-group">
+        <h1 class="popup-title">AutoClerk</h1>
+      </div>
+
+      <!-- Status pill (field count) — updated dynamically by JS -->
+      <span class="popup-scan-pill" id="header-scan-pill">Ready</span>
+
+      <!-- Hidden dot kept for JS compat -->
+      <div class="popup-status-dot" id="status-dot" title="Connection status"></div>
+    </header>
+
+    <!-- =================== TAB NAV =================== -->
+    <nav class="popup-tabs">
+      <button class="tab-btn active" data-tab="overview" id="tab-overview">Overview</button>
+      <button class="tab-btn" data-tab="errors" id="tab-errors">Error Log</button>
+      <button class="tab-btn" data-tab="about" id="tab-about">About</button>
+    </nav>
+
+    <!-- =================== TAB: OVERVIEW =================== -->
+    <section class="tab-content active" id="content-overview">
+
+      <!-- Page Status Card -->
+      <div class="page-status-card" id="page-status-card">
+        <div class="page-status-icon" id="page-status-icon">🔗</div>
+        <div class="page-status-info">
+          <div class="page-status-title" id="page-status-title">Not on MAHADBT</div>
+          <div class="page-status-subtitle" id="page-status-subtitle">Navigate to a profile section to begin</div>
+        </div>
+      </div>
+
+      <!-- Live Scan Activity (shown when on MAHADBT section) -->
+      <div class="scan-activity" id="scan-activity" style="display:none;">
+
+        <!-- Header row: pulse + label + field count pill -->
+        <div class="scan-activity-header">
+          <div class="scan-pulse-ring" id="scan-pulse">
+            <div class="scan-pulse-dot"></div>
+          </div>
+          <span class="scan-label" id="scan-label-text">Live Scanning</span>
+          <span class="scan-field-count" id="scan-field-count">— fields</span>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="scan-progress-bar">
+          <div class="scan-progress-fill" id="scan-progress-fill"></div>
+        </div>
+
+        <!-- Three pill counters — CRITICAL / WARNINGS / INFO -->
+        <div class="scan-summary-bar">
+          <div class="summary-pill critical">
+            <span class="summary-pill-val" id="ov-critical">0</span>
+            CRITICAL
+          </div>
+          <div class="summary-pill warning">
+            <span class="summary-pill-val" id="ov-warning">0</span>
+            WARNINGS
+          </div>
+          <div class="summary-pill info">
+            <span class="summary-pill-val" id="ov-good">0</span>
+            INFO
+          </div>
+        </div>
+
+        <!-- Hidden legacy stat containers — kept so popup.js can still write values -->
+        <div class="scan-stats-row" style="display:none;">
+          <div class="scan-stat"><span class="scan-stat-val stat-critical" id="ov-critical-legacy">0</span><span class="scan-stat-lbl">Critical</span></div>
+          <div class="scan-stat-divider"></div>
+          <div class="scan-stat"><span class="scan-stat-val stat-warning" id="ov-warning-legacy">0</span><span class="scan-stat-lbl">Warnings</span></div>
+          <div class="scan-stat-divider"></div>
+          <div class="scan-stat"><span class="scan-stat-val stat-good" id="ov-good-legacy">0</span><span class="scan-stat-lbl">Clear</span></div>
+        </div>
+      </div>
+
+      <!-- Profile Sections Progress -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title">Profile Sections</span>
+          <span class="section-card-badge" id="sections-badge">0/6</span>
+        </div>
+        <div class="sections-list" id="sections-list"></div>
+      </div>
+
+      <!-- Footer Action Buttons -->
+      <div class="popup-actions">
+        <button class="action-btn action-outline" id="btn-go-to-profile">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Re-validate
+        </button>
+        <button class="action-btn action-primary" id="btn-clear-session">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Save Errors
+        </button>
+      </div>
+    </section>
+
+    <!-- =================== TAB: ERROR LOG =================== -->
+    <section class="tab-content" id="content-errors">
+      <div class="errorlog-header">
+        <div class="errorlog-title-row">
+          <span class="errorlog-title">Saved Error History</span>
+          <button class="action-danger-sm" id="btn-clear-log">Clear All</button>
+        </div>
+        <div class="errorlog-subtitle">Errors saved to local session. Connect backend to persist across devices.</div>
+      </div>
+
+      <!-- Backend Connect Placeholder -->
+      <div class="backend-placeholder" id="backend-placeholder">
+        <div class="backend-placeholder-icon">🔌</div>
+        <div class="backend-placeholder-text">
+          <div class="backend-placeholder-title">Backend not connected</div>
+          <div class="backend-placeholder-sub">Errors are saved locally only.</div>
+        </div>
+        <div class="backend-badge">Local Only</div>
+      </div>
+
+      <!-- Error Log List -->
+      <div class="errorlog-list" id="errorlog-list">
+        <div class="errorlog-empty" id="errorlog-empty">
+          <div class="errorlog-empty-icon">📋</div>
+          <div class="errorlog-empty-text">No errors saved yet.<br/>Visit a MAHADBT section and use the panel to save.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== TAB: ABOUT =================== -->
+    <section class="tab-content" id="content-about">
+      <div class="about-hero">
+        <img src="../icons/icon128.png" alt="AutoClerk" width="56" height="56" class="about-logo" />
+        <h2 class="about-name">AutoClerk</h2>
+        <div class="about-tagline">MAHADBT Scholarship Validator</div>
+        <div class="version-badge">v1.0.0</div>
+      </div>
+
+      <div class="about-features">
+        <div class="feature-item">
+          <div class="feature-icon">🔍</div>
+          <div class="feature-text">
+            <div class="feature-title">Real-time Validation</div>
+            <div class="feature-desc">Validates all 6 profile sections as you fill them</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">💾</div>
+          <div class="feature-text">
+            <div class="feature-title">Session Persistence</div>
+            <div class="feature-desc">Error history saved locally across popup open/close</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-text">
+            <div class="feature-title">Smart Detection</div>
+            <div class="feature-desc">Detects missing fields, invalid formats, and mismatch rules</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🛡️</div>
+          <div class="feature-text">
+            <div class="feature-title">Non-Intrusive</div>
+            <div class="feature-desc">Works alongside MAHADBT without affecting functionality</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-sections">
+        <div class="about-section-title">Covered Sections</div>
+        <div class="about-sections-list">
+          <span class="section-tag">Personal Info</span>
+          <span class="section-tag">Address</span>
+          <span class="section-tag">Parent/Guardian</span>
+          <span class="section-tag">Current Course</span>
+          <span class="section-tag">Past Qualification</span>
+          <span class="section-tag">Hostel Details</span>
+        </div>
+      </div>
+
+      <div class="about-footer">Built for Maharashtra scholarship students 🎓</div>
+    </section>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,738 @@
+/* ui/styles.css — AutoClerk Validation Panel (injected into MAHADBT page) */
+
+/* ===== CSS Custom Properties scoped to the panel ===== */
+#autoclerk-validation-panel {
+  --ac-gold:         #F5C000;
+  --ac-gold-dark:    #D4A800;
+  --ac-gold-bg:      rgba(245,192,0,0.10);
+  --ac-gold-border:  rgba(245,192,0,0.28);
+
+  --ac-critical:     #EF4444;
+  --ac-warning:      #F59E0B;
+  --ac-success:      #22C55E;
+  --ac-info:         #22C55E;
+
+  --ac-bg:           #FFFFFF;
+  --ac-surface:      #FAFAFA;
+  --ac-border:       #F3F4F6;
+  --ac-divider:      #F3F4F6;
+
+  --ac-text:         #0D0D1A;
+  --ac-text-muted:   #6B7280;
+
+  --ac-radius:       16px;
+  --ac-radius-md:    10px;
+  --ac-radius-sm:    8px;
+  --ac-radius-pill:  999px;
+
+  --ac-shadow:       0 20px 60px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.06);
+  --ac-font:         'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* ====== PANEL DISABLED — hidden by design ====== */
+  display: none !important;
+
+
+  /* Panel positioning & shape */
+  position: fixed !important;
+  right: 20px !important;
+  top: 80px !important;
+  width: 360px !important;
+  max-height: 85vh !important;
+
+  background: rgba(255,255,255,0.92) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid var(--ac-gold-border) !important;
+  border-radius: var(--ac-radius) !important;
+  box-shadow: var(--ac-shadow) !important;
+  z-index: 2147483647 !important;
+
+  font-family: var(--ac-font) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: var(--ac-text) !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease !important;
+  user-select: none !important;
+}
+
+#autoclerk-validation-panel * {
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: var(--ac-font) !important;
+}
+
+/* Minimized state */
+#autoclerk-validation-panel.ac-minimized {
+  max-height: 58px !important;
+  overflow: hidden !important;
+}
+
+/* ===================================================
+   HEADER — white bg, golden bottom border
+=================================================== */
+.ac-header {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid rgba(245,192,0,0.30) !important;
+  padding: 12px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: grab !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+}
+
+.ac-header:active {
+  cursor: grabbing !important;
+}
+
+.ac-header-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+}
+
+/* Logo container — golden tint circle */
+.ac-logo {
+  width: 30px !important;
+  height: 30px !important;
+  background: var(--ac-gold-bg) !important;
+  border: 1px solid var(--ac-gold-border) !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.ac-title-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+}
+
+.ac-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--ac-text) !important;
+  letter-spacing: -0.2px !important;
+  line-height: 1.1 !important;
+}
+
+.ac-subtitle {
+  font-size: 10px !important;
+  color: var(--ac-text-muted) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+.ac-header-actions {
+  display: flex !important;
+  gap: 6px !important;
+}
+
+/* Minimize button — outlined gold */
+.ac-icon-btn {
+  width: 26px !important;
+  height: 26px !important;
+  background: #FAFAFA !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 6px !important;
+  color: var(--ac-text-muted) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: border-color 0.2s, background 0.2s !important;
+  padding: 0 !important;
+}
+
+.ac-icon-btn:hover {
+  background: var(--ac-gold-bg) !important;
+  border-color: var(--ac-gold-border) !important;
+  color: var(--ac-gold-dark) !important;
+}
+
+/* ===================================================
+   BODY — scrollable content area
+=================================================== */
+.ac-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 12px !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #E5E7EB transparent !important;
+}
+
+.ac-body::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.ac-body::-webkit-scrollbar-thumb {
+  background: #E5E7EB !important;
+  border-radius: 4px !important;
+}
+
+.ac-body::-webkit-scrollbar-thumb:hover {
+  background: var(--ac-gold) !important;
+}
+
+/* ===================================================
+   SCANNER ACTIVITY BAR
+=================================================== */
+.ac-scanner-bar {
+  background: #FAFAFA !important;
+  border: 1px solid var(--ac-border) !important;
+  border-radius: var(--ac-radius-md) !important;
+  padding: 9px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  transition: background 0.3s, border-color 0.3s !important;
+}
+
+.ac-scanner-bar.ac-scanner-success {
+  background: rgba(34,197,94,0.06) !important;
+  border-color: rgba(34,197,94,0.25) !important;
+}
+
+.ac-scanner-bar.ac-scanner-error {
+  background: rgba(239,68,68,0.05) !important;
+  border-color: rgba(239,68,68,0.20) !important;
+}
+
+.ac-scanner-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 1 !important;
+}
+
+.ac-scanner-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Pulse animation — golden */
+.ac-scanner-pulse {
+  position: relative !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0 !important;
+}
+
+.ac-scanner-pulse::before,
+.ac-scanner-pulse::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: 50% !important;
+  background: rgba(245,192,0,0.28) !important;
+  animation: acScanPulse 2s ease-out infinite !important;
+}
+
+.ac-scanner-pulse::after {
+  animation-delay: 0.7s !important;
+}
+
+@keyframes acScanPulse {
+  0%   { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(2);   opacity: 0;   }
+}
+
+.ac-scanner-dot {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%,-50%) !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: var(--ac-gold) !important;
+  z-index: 1 !important;
+}
+
+.ac-scanner-label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--ac-text) !important;
+  flex: 1 !important;
+}
+
+.ac-scanner-fields {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--ac-text-muted) !important;
+  background: #FFFFFF !important;
+  border: 1px solid #E5E7EB !important;
+  padding: 2px 8px !important;
+  border-radius: var(--ac-radius-pill) !important;
+}
+
+/* Spinner — golden */
+.ac-spinner {
+  width: 13px !important;
+  height: 13px !important;
+  border-radius: 50% !important;
+  border: 2px solid #E5E7EB !important;
+  border-top-color: var(--ac-gold) !important;
+  flex-shrink: 0 !important;
+  opacity: 0 !important;
+  transition: opacity 0.2s !important;
+}
+
+.ac-spinner.ac-spinning {
+  opacity: 1 !important;
+  animation: acSpin 0.7s linear infinite !important;
+}
+
+@keyframes acSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scan progress bar — golden fill */
+.ac-scan-track {
+  height: 4px !important;
+  background: #F3F4F6 !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.ac-scan-fill {
+  height: 100% !important;
+  border-radius: 4px !important;
+  width: 0% !important;
+  background: var(--ac-gold) !important;
+  transition: width 0.4s ease, background 0.3s !important;
+}
+
+.ac-scan-fill.ac-fill-scanning {
+  transition: none !important;
+}
+
+/* ===================================================
+   STATUS BANNER
+=================================================== */
+.ac-status-banner {
+  background: #FAFAFA !important;
+  border: 1px solid var(--ac-border) !important;
+  border-radius: var(--ac-radius-md) !important;
+  padding: 11px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  position: relative !important;
+  transition: all 0.3s ease !important;
+}
+
+.ac-status-banner.ac-status-success {
+  background: rgba(34,197,94,0.06) !important;
+  border-color: rgba(34,197,94,0.25) !important;
+}
+
+.ac-status-banner.ac-status-error {
+  background: rgba(239,68,68,0.05) !important;
+  border-color: rgba(239,68,68,0.22) !important;
+  border-left: 3px solid var(--ac-critical) !important;
+}
+
+.ac-status-banner.ac-status-warning {
+  background: rgba(245,158,11,0.06) !important;
+  border-color: rgba(245,158,11,0.25) !important;
+  border-left: 3px solid var(--ac-warning) !important;
+}
+
+.ac-status-icon {
+  font-size: 20px !important;
+  flex-shrink: 0 !important;
+}
+
+.ac-status-info {
+  flex: 1 !important;
+}
+
+.ac-status-text {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--ac-text) !important;
+}
+
+.ac-status-sub {
+  font-size: 11px !important;
+  color: var(--ac-text-muted) !important;
+  margin-top: 1px !important;
+}
+
+/* Check badge — golden */
+.ac-check-badge {
+  background: var(--ac-gold-bg) !important;
+  border: 1px solid var(--ac-gold-border) !important;
+  color: var(--ac-gold-dark) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: var(--ac-radius-pill) !important;
+  letter-spacing: 0.3px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ===================================================
+   SUMMARY PILLS  (CRITICAL / WARNINGS / INFO)
+=================================================== */
+.ac-pills {
+  display: flex !important;
+  gap: 6px !important;
+}
+
+.ac-pill {
+  flex: 1 !important;
+  border-radius: var(--ac-radius-pill) !important;
+  padding: 7px 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important;
+  border: 1px solid transparent !important;
+}
+
+.ac-pill-critical {
+  background: rgba(239,68,68,0.10) !important;
+  border-color: rgba(239,68,68,0.18) !important;
+}
+
+.ac-pill-warning {
+  background: rgba(245,158,11,0.10) !important;
+  border-color: rgba(245,158,11,0.18) !important;
+}
+
+.ac-pill-info {
+  background: rgba(34,197,94,0.10) !important;
+  border-color: rgba(34,197,94,0.18) !important;
+}
+
+.ac-pill-count {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+.ac-pill-critical .ac-pill-count { color: var(--ac-critical) !important; }
+.ac-pill-warning  .ac-pill-count { color: var(--ac-warning)  !important; }
+.ac-pill-info     .ac-pill-count { color: var(--ac-success)  !important; }
+
+.ac-pill-label {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: var(--ac-text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* ===================================================
+   ERRORS CONTAINER
+=================================================== */
+.ac-errors-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.ac-errors-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--ac-text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* collapse/expand text button — golden */
+.ac-text-btn {
+  background: none !important;
+  border: none !important;
+  color: var(--ac-gold-dark) !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: opacity 0.15s !important;
+}
+
+.ac-text-btn:hover {
+  opacity: 0.7 !important;
+}
+
+/* ===================================================
+   ERROR GROUPS (collapsible)
+=================================================== */
+.ac-error-group {
+  background: #FFFFFF !important;
+  border: 1px solid var(--ac-border) !important;
+  border-radius: var(--ac-radius-sm) !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+}
+
+.ac-error-group-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 9px 10px !important;
+  background: #FAFAFA !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--ac-text) !important;
+  user-select: none !important;
+  transition: background 0.12s !important;
+}
+
+.ac-error-group-header:hover {
+  background: #F3F4F6 !important;
+}
+
+.ac-group-icon {
+  font-size: 13px !important;
+}
+
+.ac-group-label {
+  flex: 1 !important;
+}
+
+/* Count badge — golden */
+.ac-group-count {
+  background: var(--ac-gold-bg) !important;
+  border: 1px solid var(--ac-gold-border) !important;
+  color: var(--ac-gold-dark) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  border-radius: var(--ac-radius-pill) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 5px !important;
+}
+
+.ac-group-chevron {
+  font-size: 11px !important;
+  color: var(--ac-text-muted) !important;
+  transition: transform 0.2s !important;
+}
+
+.ac-error-group.collapsed .ac-group-chevron {
+  transform: rotate(-90deg) !important;
+}
+
+.ac-error-group-body {
+  border-top: 1px solid var(--ac-border) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.ac-error-group.collapsed .ac-error-group-body {
+  display: none !important;
+}
+
+/* ===================================================
+   INDIVIDUAL ERROR ITEMS — colored left-border accent
+=================================================== */
+.ac-error-item {
+  padding: 9px 10px !important;
+  border-left: 3px solid transparent !important;
+  border-bottom: 1px solid var(--ac-border) !important;
+  transition: background 0.12s !important;
+  background: #FFFFFF !important;
+}
+
+.ac-error-item:last-child {
+  border-bottom: none !important;
+}
+
+.ac-error-item:hover {
+  background: #FAFAFA !important;
+}
+
+.ac-error-item.severity-critical {
+  border-left-color: var(--ac-critical) !important;
+}
+
+.ac-error-item.severity-warning {
+  border-left-color: var(--ac-warning) !important;
+}
+
+.ac-error-item.severity-info {
+  border-left-color: var(--ac-success) !important;
+}
+
+.ac-error-field {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--ac-text) !important;
+  margin-bottom: 2px !important;
+}
+
+.ac-error-msg {
+  font-size: 11px !important;
+  color: var(--ac-text-muted) !important;
+  line-height: 1.4 !important;
+}
+
+/* ===================================================
+   EMPTY / SUCCESS STATES
+=================================================== */
+.ac-empty-state,
+.ac-success-state {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 20px !important;
+  text-align: center !important;
+}
+
+.ac-empty-icon,
+.ac-success-icon {
+  font-size: 26px !important;
+}
+
+.ac-empty-text {
+  font-size: 12px !important;
+  color: var(--ac-text-muted) !important;
+}
+
+.ac-success-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--ac-success) !important;
+}
+
+.ac-success-text {
+  font-size: 12px !important;
+  color: var(--ac-text-muted) !important;
+}
+
+/* ===================================================
+   ACTION BUTTONS
+=================================================== */
+.ac-actions {
+  display: flex !important;
+  gap: 8px !important;
+  padding-top: 2px !important;
+}
+
+.ac-btn {
+  flex: 1 !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: var(--ac-radius-md) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.2s !important;
+  letter-spacing: 0.1px !important;
+}
+
+.ac-btn:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+/* Re-validate — outlined gold */
+.ac-btn-secondary {
+  background: #FFFFFF !important;
+  color: var(--ac-gold-dark) !important;
+  border: 1.5px solid var(--ac-gold) !important;
+}
+
+.ac-btn-secondary:hover:not(:disabled) {
+  background: var(--ac-gold) !important;
+  color: var(--ac-text) !important;
+  border-color: var(--ac-gold) !important;
+}
+
+/* Save Errors — solid gold */
+.ac-btn-primary {
+  background: var(--ac-gold) !important;
+  color: var(--ac-text) !important;
+  border: 1.5px solid var(--ac-gold) !important;
+  box-shadow: 0 3px 12px rgba(245,192,0,0.22) !important;
+}
+
+.ac-btn-primary:hover:not(:disabled) {
+  background: var(--ac-gold-dark) !important;
+  border-color: var(--ac-gold-dark) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(245,192,0,0.30) !important;
+}
+
+/* ===================================================
+   TOAST NOTIFICATION
+=================================================== */
+.ac-toast {
+  position: fixed !important;
+  bottom: -80px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  min-width: 240px !important;
+  max-width: 380px !important;
+  padding: 10px 18px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: white !important;
+  z-index: 2147483647 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
+  transition: bottom 0.35s cubic-bezier(0.34,1.56,0.64,1) !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  background: #0D0D1A !important;
+}
+
+.ac-toast.ac-toast-show {
+  bottom: 32px !important;
+}
+
+.ac-toast-success { background: #14532D !important; }
+.ac-toast-error   { background: #7F1D1D !important; }
+.ac-toast-warning { background: var(--ac-gold-dark) !important; color: var(--ac-text) !important; }
+
+/* ===================================================
+   INLINE FIELD ERRORS (injected into MAHADBT form)
+=================================================== */
+.ac-field-error {
+  border: 2px solid var(--ac-critical) !important;
+  background-color: rgba(239,68,68,0.04) !important;
+}
+
+.ac-inline-error {
+  color: var(--ac-critical) !important;
+  font-size: 11px !important;
+  margin-top: 4px !important;
+  font-weight: 500 !important;
+  display: block !important;
+  font-family: var(--ac-font) !important;
+}
