@@ -6,16 +6,51 @@
   "permissions": [
     "storage",
     "activeTab",
-    "notifications"
+    "tabs",
+    "notifications",
+    "identity"
   ],
   "host_permissions": [
     "https://mahadbt.maharashtra.gov.in/*",
-    "https://*.supabase.co/*"
+    "https://*.supabase.co/*",
+    "https://autocleark.vercel.app/*",
+    "http://localhost:3000/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
   },
-  "content_scripts": [],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mahadbt.maharashtra.gov.in/*"
+      ],
+      "js": [
+        "content/dom-parser.js",
+        "content/ui-injector.js",
+        "content/validators/personal-info.js",
+        "content/validators/address-info.js",
+        "content/validators/parent-info.js",
+        "content/validators/current-course.js",
+        "content/validators/past-qualification.js",
+        "content/validators/hostel-details.js",
+        "content/content-script.js"
+      ],
+      "css": [
+        "ui/styles.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://autocleark.vercel.app/*",
+        "http://localhost:3000/*"
+      ],
+      "js": [
+        "content/session-bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
@@ -32,8 +67,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["icons/*.png"],
-      "matches": ["https://mahadbt.maharashtra.gov.in/*"]
+      "resources": [
+        "icons/*.png"
+      ],
+      "matches": [
+        "https://mahadbt.maharashtra.gov.in/*"
+      ]
     }
   ]
 }

@@ -34,6 +34,7 @@
     <nav class="popup-tabs">
       <button class="tab-btn active" data-tab="overview" id="tab-overview">Overview</button>
       <button class="tab-btn" data-tab="errors" id="tab-errors">Error Log</button>
+      <button class="tab-btn" data-tab="profile" id="tab-profile">Profile</button>
       <button class="tab-btn" data-tab="about" id="tab-about">About</button>
     </nav>
 
@@ -103,11 +104,11 @@
 
       <!-- Footer Action Buttons -->
       <div class="popup-actions">
-        <button class="action-btn action-outline" id="btn-go-to-profile">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          Re-validate
+        <button class="action-btn action-outline" id="btn-force-refresh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 102.6-6.4L2 9"/></svg>
+          Refresh & Rescan
         </button>
-        <button class="action-btn action-primary" id="btn-clear-session">
+        <button class="action-btn action-primary" id="btn-save-errors-popup">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
           Save Errors
         </button>
@@ -118,27 +119,58 @@
     <section class="tab-content" id="content-errors">
       <div class="errorlog-header">
         <div class="errorlog-title-row">
-          <span class="errorlog-title">Saved Error History</span>
-          <button class="action-danger-sm" id="btn-clear-log">Clear All</button>
+          <span class="errorlog-title">Live Section Errors</span>
         </div>
-        <div class="errorlog-subtitle">Errors saved to local session. Connect backend to persist across devices.</div>
-      </div>
-
-      <!-- Backend Connect Placeholder -->
-      <div class="backend-placeholder" id="backend-placeholder">
-        <div class="backend-placeholder-icon">🔌</div>
-        <div class="backend-placeholder-text">
-          <div class="backend-placeholder-title">Backend not connected</div>
-          <div class="backend-placeholder-sub">Errors are saved locally only.</div>
-        </div>
-        <div class="backend-badge">Local Only</div>
+        <div class="errorlog-subtitle">Real-time validation for the current MAHADBT section. Use "Save Errors" below to persist.</div>
       </div>
 
       <!-- Error Log List -->
       <div class="errorlog-list" id="errorlog-list">
         <div class="errorlog-empty" id="errorlog-empty">
-          <div class="errorlog-empty-icon">📋</div>
-          <div class="errorlog-empty-text">No errors saved yet.<br/>Visit a MAHADBT section and use the panel to save.</div>
+          <div class="errorlog-empty-icon">✓</div>
+          <div class="errorlog-empty-text">No errors found on this page!</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== TAB: PROFILE =================== -->
+    <section class="tab-content" id="content-profile">
+      <div class="auth-container" id="auth-container">
+        <!-- Signed Out State -->
+        <div class="auth-card" id="auth-signed-out" style="display:none;">
+          <div class="auth-welcome-icon">👋</div>
+          <h2 class="auth-title">Welcome to AutoClerk</h2>
+          <p class="auth-desc">Sign in to sync your scholarship errors across devices and access premium features.</p>
+          
+          <button class="btn-google" id="btn-login-google">
+            <svg class="google-icon" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+              <path fill="none" d="M0 0h48v48H0z"></path>
+            </svg>
+            Sign in with Google
+          </button>
+          <!-- After signing in on the website, click here to refresh -->
+          <button class="btn-sync" id="btn-sync-session">
+            ↺ Already signed in? Sync session
+          </button>
+        </div>
+
+        <!-- Signed In State -->
+        <div class="profile-card" id="auth-signed-in" style="display:none;">
+          <img src="" alt="Avatar" class="profile-avatar" id="user-avatar" />
+          <div class="profile-info">
+            <div class="profile-name" id="user-name">Loading...</div>
+            <div class="profile-email" id="user-email">...</div>
+            <button class="btn-logout" id="btn-logout">Sign Out</button>
+          </div>
+          
+          <!-- Loading state overlay -->
+          <div class="auth-loading" id="auth-loading" style="display:none;">
+            <div class="spinner"></div>
+          </div>
         </div>
       </div>
     </section>

@@ -164,14 +164,14 @@ class AutoClerkValidator {
         return;
       }
 
-      // Increment counter
+      // Increment counter for local storage
       session.checkCounter = (session.checkCounter || 0) + 1;
-      this.checkNumber = session.checkCounter + 1;
-      this.uiInjector.updateCheckBadge(this.checkNumber);
+      this.checkNumber = session.checkCounter;
+      this.uiInjector.updateCheckBadge(this.checkNumber + 1);
 
-      // Build check record
+      // Build check record for local popup UI
       const check = {
-        checkNumber: session.checkCounter,
+        checkNumber: this.checkNumber,
         section: this.currentSection,
         timestamp: new Date().toISOString(),
         errors: this.errors.map(e => ({
@@ -186,15 +186,41 @@ class AutoClerkValidator {
       if (!session.savedChecks) session.savedChecks = [];
       session.savedChecks.push(check);
 
-      // Cap at 50 checks to avoid excessive storage
       if (session.savedChecks.length > 50) {
         session.savedChecks = session.savedChecks.slice(-50);
       }
 
       await this.saveSession(session);
 
-      this.uiInjector.showToast(`💾 Saved ${this.errors.length} errors as Check #${session.checkCounter}`, 'success');
-      console.log('[AutoClerk] Errors saved locally:', check);
+      // Check for Supabase session to push to cloud
+      chrome.storage.local.get(['sbSession'], (result) => {
+        const sbSession = result.sbSession;
+        const accessToken = sbSession?.access_token || sbSession?.session?.access_token;
+        const user = sbSession?.user || sbSession?.session?.user;
+
+        if (accessToken && user && user.id) {
+          // Push to background script for securely hitting Supabase
+          chrome.runtime.sendMessage({
+            action: 'saveToSupabase',
+            payload: {
+              errors: this.errors,
+              studentId: user.id, // Tie logs to authenticated user ID
+              checkNumber: this.checkNumber,
+              section: this.currentSection,
+              accessToken: accessToken
+            }
+          }, (response) => {
+            if (chrome.runtime.lastError || !response?.success) {
+              console.error('[AutoClerk] Cloud sync failed:', chrome.runtime.lastError || response?.error);
+              this.uiInjector.showToast(`💾 Saved locally (Cloud sync failed)`, 'warning');
+            } else {
+              this.uiInjector.showToast(`☁️ Synced ${this.errors.length} errors to cloud!`, 'success');
+            }
+          });
+        } else {
+          this.uiInjector.showToast(`💾 Saved ${this.errors.length} errors locally`, 'success');
+        }
+      });
 
     } finally {
       this.isSaving = false;
@@ -327,7 +353,19 @@ class AutoClerkValidator {
   // ===== Action Listeners =====
 
   attachActionListeners() {
-    // Re-validate button
+    // Listen for messages from popup buttons
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.action === 'forceUpdate') {
+        this.debounceValidate(100);
+        sendResponse({ success: true });
+      } else if (message.action === 'triggerSave') {
+        this.saveErrorsLocally();
+        sendResponse({ success: true });
+      }
+      // Note: Do not `return true` here indiscriminately, or it interferes with other listeners
+    });
+
+    // Re-validate button (in-page UI)
     const validateBtn = document.getElementById('ac-validate-btn');
     if (validateBtn) {
       validateBtn.addEventListener('click', () => {
@@ -376,7 +414,9 @@ class AutoClerkValidator {
     // Optional: Inject an error banner if the UI panel failed to load
     const banner = document.createElement('div');
     banner.style = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:white;padding:8px;z-index:999999;text-align:center;font-weight:bold;font-size:12px;';
-    banner.textContent = `AutoClerk Error: ${err.message}`;
-    document.body.prepend(banner);
+    banner.textContent = `AutoClerk Error: ${err?.message || err}`;
+    if (document.body) {
+      document.body.prepend(banner);
+    }
   }
 })();

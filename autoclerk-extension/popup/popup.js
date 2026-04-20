@@ -1,5 +1,78 @@
-// popup/popup.js — AutoClerk Popup Controller
+// popup/popup.js — AutoClerk Popup Controller (self-contained, no ES imports)
 
+// ===== Inlined Config (from lib/supabase-config.js) =====
+const SUPABASE_URL = 'https://vuvrhlvfvcfkxhsqqxik.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1dnJobHZmdmNma3hoc3FxeGlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyOTYzMTgsImV4cCI6MjA5MDg3MjMxOH0.DCS9215sS1uF7bitZuqokYEXt-R8bVKswEJ-_votOVI';
+const WEB_APP_DOMAIN = 'autocleark.vercel.app';
+
+// ===== Inlined Auth Helpers (from lib/supabase-auth.js) =====
+const SupabaseAuth = {
+  async getSession() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['sbSession'], (result) => {
+        resolve(result.sbSession || null);
+      });
+    });
+  },
+
+  async saveSession(session) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ sbSession: session }, resolve);
+    });
+  },
+
+  async logout() {
+    return new Promise((resolve) => {
+      chrome.storage.local.remove(['sbSession'], resolve);
+    });
+  },
+
+  async getUserDetails(userId, accessToken) {
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/user_details?id=eq.${userId}&select=*`,
+        {
+          method: 'GET',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data[0] || null;
+    } catch (err) {
+      console.error('[AutoClerk] Error fetching user details:', err);
+      return null;
+    }
+  },
+
+  async checkAuth() {
+    const session = await this.getSession();
+    if (!session) return null;
+
+    // Supabase stores the session with either access_token directly or nested
+    const accessToken = session.access_token || session?.session?.access_token;
+    const user = session.user || session?.session?.user;
+
+    if (!accessToken || !user) return null;
+
+    const profile = await this.getUserDetails(user.id, accessToken);
+
+    return {
+      session,
+      profile: profile || {
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+        email: user.email
+      }
+    };
+  }
+};
+
+// ===== MAHADBT Sections =====
 const SECTIONS = [
   { key: 'personal_information', label: 'Personal Information', path: 'UpdateProfile' },
   { key: 'address_information', label: 'Address Information', path: 'AddressInformation' },
@@ -15,19 +88,24 @@ const MAHADBT_BASE = 'https://mahadbt.maharashtra.gov.in/';
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
-  
+
   // Listen for storage changes for real-time updates
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.acSession) {
       checkCurrentTab();
       loadErrorLog();
     }
+    if (changes.sbSession) {
+      updateAuthState();
+    }
   });
 
   // Initial load
+  await updateAuthState();
   await checkCurrentTab();
   await loadErrorLog();
   setupActionButtons();
+  setupAuthButtons();
 
   // Helper: Poll the timer visually since storage logic only fires on data change
   setInterval(() => {
@@ -75,7 +153,6 @@ async function checkCurrentTab() {
     updateStatusDot('connected');
     renderSectionsList(matchedSection?.key);
 
-    // Load live session stats
     if (matchedSection) {
       scanActivity.style.display = 'block';
       await updateLiveStats(matchedSection.key);
@@ -111,21 +188,20 @@ async function updateLiveStats(sectionKey) {
   const warning = errors.filter(e => e.severity === 'warning').length;
   const clear = Math.max(0, fieldCount - errors.length);
 
-  // Animate progress bar
-  const progressPct = fieldCount > 0 ? Math.max(10, Math.round(((fieldCount - errors.length) / fieldCount) * 100)) : 30;
+  const progressPct = fieldCount > 0
+    ? Math.max(10, Math.round(((fieldCount - errors.length) / fieldCount) * 100))
+    : 30;
   const fillEl = document.getElementById('scan-progress-fill');
   if (fillEl) {
     fillEl.style.width = `${progressPct}%`;
     fillEl.style.background = critical > 0 ? '#ef4444' : warning > 0 ? '#f59e0b' : '#10b981';
   }
 
-  // Handle label
   updateTimerUI(sectionData);
 
   const fieldCountEl = document.getElementById('scan-field-count');
   if (fieldCountEl) fieldCountEl.textContent = `${fieldCount} fields`;
 
-  // Update header pill
   const headerPill = document.getElementById('header-scan-pill');
   if (headerPill) headerPill.textContent = `${fieldCount} fields`;
 
@@ -210,7 +286,6 @@ function renderSectionsList(activeSection) {
           statusLabel = 'ERRORS';
           statusClass = 'status-error';
           dotClass = 'dot-error';
-          isActive ? '' : dotClass = 'dot-error'; // Keep error dot
         } else if (isFinished) {
           statusLabel = 'CLEAN';
           statusClass = 'status-success';
@@ -237,50 +312,52 @@ async function loadErrorLog() {
   if (!logList) return;
 
   const session = await getSession();
-  const checks = session.savedChecks || [];
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const url = tabs[0]?.url || '';
+  const matchedSection = SECTIONS.find(s => url.includes(s.path));
 
-  if (checks.length === 0) {
-    emptyState.style.display = 'flex';
-    logList.querySelectorAll('.check-card').forEach(c => c.remove());
+  let errors = [];
+  if (matchedSection && session.sections?.[matchedSection.key]) {
+      errors = session.sections[matchedSection.key].errors || [];
+  }
+
+  if (errors.length === 0) {
+    if (emptyState) emptyState.style.display = 'flex';
+    logList.querySelectorAll('.ac-error-group').forEach(c => c.remove());
+    if (emptyState) logList.appendChild(emptyState);
     return;
   }
 
-  emptyState.style.display = 'none';
-  
-  // Render cards
-  const cardsHtml = checks.slice().reverse().map(check => {
-    const time = new Date(check.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const errorsListHtml = check.errors.slice(0, 3).map(err => `
-      <div class="check-error-row">
-        <div class="check-error-dot dot-${err.severity}"></div>
-        <span class="check-error-field">${err.field}:</span>
-        <span class="check-error-msg">${err.message}</span>
+  if (emptyState) emptyState.style.display = 'none';
+
+  // Group errors by type
+  const grouped = {};
+  errors.forEach(err => {
+    if (!grouped[err.type]) grouped[err.type] = [];
+    grouped[err.type].push(err);
+  });
+
+  const cardsHtml = Object.entries(grouped).map(([type, errs]) => `
+    <div class="ac-error-group" style="background:#fff;border:1px solid #e1e3e8;border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <div style="padding:12px;background:#f8f9fc;font-weight:600;font-size:13px;border-bottom:1px solid #e1e3e8;color:#1e293b;display:flex;justify-content:space-between;align-items:center;">
+        <span>${type.replace(/_/g, ' ')}</span>
+        <span style="background:#e2e8f0;padding:2px 8px;border-radius:12px;font-size:11px;">${errs.length} issues</span>
       </div>
-    `).join('');
-
-    const moreCount = check.errors.length - 3;
-    const statusBadge = check.totalErrors > 0 ? 'ERRORS' : 'CLEAN';
-    const statusClass = check.totalErrors > 0 ? 'status-error' : 'status-success';
-
-    return `
-      <div class="check-card">
-        <div class="check-card-header">
-          <div class="check-card-left">
-            <span class="check-number">#${check.checkNumber}</span>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:12px;">
+        ${errs.map(err => {
+           let dotColor = err.severity === 'critical' ? '#ef4444' : err.severity === 'warning' ? '#f59e0b' : '#3b82f6';
+           return `
+          <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.4;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};margin-top:4px;flex-shrink:0;"></div>
             <div>
-              <div class="check-section">${check.section.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
-              <div class="check-time">${time}</div>
+              <strong style="color:#1e293b;display:block;">${err.field}</strong>
+              <span style="color:#64748b;">${err.message}</span>
             </div>
           </div>
-          <span class="check-status-badge ${statusClass}">${statusBadge}</span>
-        </div>
-        <div class="check-errors-list">
-          ${errorsListHtml}
-          ${moreCount > 0 ? `<div class="check-more">+ ${moreCount} more issues</div>` : ''}
-        </div>
+        `}).join('')}
       </div>
-    `;
-  }).join('');
+    </div>
+  `).join('');
 
   logList.innerHTML = cardsHtml;
 }
@@ -288,31 +365,38 @@ async function loadErrorLog() {
 // ===== Action Buttons =====
 
 function setupActionButtons() {
-  // "Re-validate" button — navigate to MAHADBT profile
-  document.getElementById('btn-go-to-profile')?.addEventListener('click', () => {
-    window.open(MAHADBT_BASE + 'UpdateProfile/UpdateProfile', '_blank');
-  });
-
-  // "Save Errors" button (btn-clear-session in DOM) — clear session and restart
-  document.getElementById('btn-clear-session')?.addEventListener('click', () => {
-    if (confirm('Clear all session data and history?')) {
-      chrome.storage.local.set({
-        acSession: { sections: {}, savedChecks: [], checkCounter: 0 }
-      }, () => {
-        checkCurrentTab();
-        loadErrorLog();
-      });
+  document.getElementById('btn-force-refresh')?.addEventListener('click', async () => {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'forceUpdate' });
+      // Visual feedback
+      const btn = document.getElementById('btn-force-refresh');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Scanning...';
+      setTimeout(() => btn.innerHTML = originalText, 1000);
     }
   });
 
-  document.getElementById('btn-clear-log')?.addEventListener('click', () => {
-    getSession().then(session => {
-      session.savedChecks = [];
-      chrome.storage.local.set({ acSession: session }, () => {
-        loadErrorLog();
-      });
-    });
+  document.getElementById('btn-save-errors-popup')?.addEventListener('click', async () => {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'triggerSave' });
+      // Visual feedback
+      const btn = document.getElementById('btn-save-errors-popup');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '💾 Triggered!';
+      setTimeout(() => btn.innerHTML = originalText, 1000);
+    }
   });
+
+}
+
+// ===== Auth Buttons =====
+
+function setupAuthButtons() {
+  document.getElementById('btn-login-google')?.addEventListener('click', handleLogin);
+  document.getElementById('btn-logout')?.addEventListener('click', handleLogout);
+  document.getElementById('btn-sync-session')?.addEventListener('click', syncSessionFromWebApp);
 }
 
 // ===== Storage Helpers =====
@@ -323,4 +407,114 @@ async function getSession() {
       resolve(result.acSession || { sections: {}, savedChecks: [], checkCounter: 0 });
     });
   });
+}
+
+// ===== Auth & Profile Logic =====
+
+async function updateAuthState() {
+  const authSignedOut = document.getElementById('auth-signed-out');
+  const authSignedIn = document.getElementById('auth-signed-in');
+  const authLoading = document.getElementById('auth-loading');
+
+  if (!authSignedOut || !authSignedIn) return;
+
+  if (authLoading) authLoading.style.display = 'flex';
+
+  try {
+    const auth = await SupabaseAuth.checkAuth();
+
+    if (auth && auth.session) {
+      authSignedOut.style.display = 'none';
+      authSignedIn.style.display = 'flex';
+
+      const nameEl = document.getElementById('user-name');
+      const emailEl = document.getElementById('user-email');
+      const avatarEl = document.getElementById('user-avatar');
+
+      if (nameEl) nameEl.textContent = auth.profile.full_name || 'User';
+      if (emailEl) emailEl.textContent = auth.profile.email || '';
+      if (avatarEl && auth.profile.avatar_url) {
+        avatarEl.src = auth.profile.avatar_url;
+      } else if (avatarEl) {
+        avatarEl.src = '../icons/icon128.png';
+      }
+
+      const backendPlaceholder = document.getElementById('backend-placeholder');
+      if (backendPlaceholder) {
+        backendPlaceholder.innerHTML = `
+          <div class="backend-placeholder-icon" style="color:var(--success)">✓</div>
+          <div class="backend-placeholder-text">
+            <div class="backend-placeholder-title">Connected to Cloud</div>
+            <div class="backend-placeholder-sub">Syncing errors to your account.</div>
+          </div>
+          <div class="backend-badge" style="background:var(--gold-light);color:var(--gold-dark);">Cloud Sync</div>
+        `;
+      }
+    } else {
+      authSignedOut.style.display = 'flex';
+      authSignedIn.style.display = 'none';
+
+      const backendPlaceholder = document.getElementById('backend-placeholder');
+      if (backendPlaceholder) {
+        backendPlaceholder.innerHTML = `
+          <div class="backend-placeholder-icon">🔌</div>
+          <div class="backend-placeholder-text">
+            <div class="backend-placeholder-title">Backend not connected</div>
+            <div class="backend-placeholder-sub">Sign in to sync across devices.</div>
+          </div>
+          <div class="backend-badge">Local Only</div>
+        `;
+      }
+    }
+  } catch (err) {
+    console.error('[AutoClerk] Auth check failed:', err);
+  } finally {
+    if (authLoading) authLoading.style.display = 'none';
+  }
+}
+
+function handleLogin() {
+  const loginUrl = `https://${WEB_APP_DOMAIN}/login`;
+  window.open(loginUrl, '_blank');
+}
+
+async function handleLogout() {
+  if (confirm('Are you sure you want to sign out?')) {
+    await SupabaseAuth.logout();
+    await updateAuthState();
+  }
+}
+
+async function syncSessionFromWebApp() {
+  const syncBtn = document.getElementById('btn-sync-session');
+  if (syncBtn) {
+    syncBtn.textContent = '⏳ Syncing...';
+    syncBtn.disabled = true;
+  }
+
+  try {
+    const tabs = await chrome.tabs.query({ url: 'https://autocleark.vercel.app/*' });
+
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'syncSession' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn('[AutoClerk] Bridge not available:', chrome.runtime.lastError.message);
+        }
+        setTimeout(() => updateAuthState(), 1200);
+      });
+    } else {
+      // No web app tab open — just re-check storage
+      await updateAuthState();
+    }
+  } catch (err) {
+    console.error('[AutoClerk] Sync error:', err);
+    await updateAuthState();
+  } finally {
+    setTimeout(() => {
+      if (syncBtn) {
+        syncBtn.textContent = '↺ Already signed in? Sync session';
+        syncBtn.disabled = false;
+      }
+    }, 2500);
+  }
 }

@@ -37,21 +37,58 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // =============================================
-// TODO: Supabase Backend Integration
+// Supabase Backend Integration
 // =============================================
-// When you are ready to connect to Supabase for cross-device persistence:
-//
-// 1. Create a Supabase project at https://supabase.com
-// 2. Run the SQL schema in database-schema.sql in your Supabase SQL Editor
-// 3. Add your Project URL and Anon Key below (or retrieve from storage):
-//
-//    const SUPABASE_URL = 'https://xxxx.supabase.co';
-//    const SUPABASE_ANON_KEY = 'eyJhbGciOiJ...';
-//
-// 4. In content-script.js -> saveErrorsLocally(), add a call to:
-//    await syncToSupabase(check, SUPABASE_URL, SUPABASE_ANON_KEY);
-//
-// 5. The SupabaseExtClient class in api/supabase-client.js is ready to use.
+const SUPABASE_URL = 'https://vuvrhlvfvcfkxhsqqxik.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1dnJobHZmdmNma3hoc3FxeGlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyOTYzMTgsImV4cCI6MjA5MDg3MjMxOH0.DCS9215sS1uF7bitZuqokYEXt-R8bVKswEJ-_votOVI';
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'saveToSupabase') {
+    (async () => {
+      try {
+        const { errors, studentId, checkNumber, section, accessToken } = message.payload;
+        
+        if (!errors || errors.length === 0) {
+          return sendResponse({ success: true });
+        }
+
+        const rows = errors.map(err => ({
+          student_id: studentId,
+          check_number: checkNumber,
+          section: section,
+          error_type: err.type,
+          field_name: err.field,
+          error_description: err.message,
+          severity: err.severity,
+          resolved: false,
+          created_at: new Date().toISOString()
+        }));
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/error_logs`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${accessToken}`, // Use the user's token!
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(rows)
+        });
+
+        if (!response.ok) {
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.message || `HTTP ${response.status}`);
+        }
+
+        sendResponse({ success: true });
+      } catch (err) {
+        console.error('[AutoClerk SW] Failed to save to Supabase:', err);
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+    return true; // Keep message channel open for async
+  }
+});
 // =============================================
 
 // Clear badge when tab navigates away from MAHADBT
