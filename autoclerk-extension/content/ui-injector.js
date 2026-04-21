@@ -141,6 +141,7 @@ class UIInjector {
     const fieldsEl = document.getElementById('ac-scanner-fields');
     const spinner = document.getElementById('ac-spinner');
     const fill = document.getElementById('ac-scan-fill');
+    const track = document.querySelector('.ac-scan-track');
 
     if (labelEl) {
       labelEl.textContent = 'Scanning fields...';
@@ -156,6 +157,7 @@ class UIInjector {
       fill.style.width = '0%';
       fill.classList.add('ac-fill-scanning');
     }
+    if (track) track.style.display = 'block';
 
     // Animate progress fill sliding across
     let progress = 0;
@@ -174,6 +176,7 @@ class UIInjector {
     const spinner = document.getElementById('ac-spinner');
     const fill = document.getElementById('ac-scan-fill');
     const bar = document.getElementById('ac-scanner-bar');
+    const track = document.querySelector('.ac-scan-track');
 
     if (labelEl) {
       if (errorCount === 0) {
@@ -199,6 +202,7 @@ class UIInjector {
       fill.style.background = errorCount === 0 ? '#10b981' : '#ef4444';
       fill.style.transition = 'width 0.5s ease, background 0.3s';
     }
+    if (track) track.style.display = 'none';
   }
 
   updateStatus(errors, fieldCount = 0) {
@@ -256,8 +260,10 @@ class UIInjector {
     }
 
     const grouped = this._groupByType(errors);
+    const collapseByDefault = errors.length > 2;
+
     list.innerHTML = Object.entries(grouped).map(([type, errs]) => `
-      <div class="ac-error-group" data-type="${type}">
+      <div class="ac-error-group ${collapseByDefault ? 'collapsed' : ''}" data-type="${type}">
         <div class="ac-error-group-header" onclick="this.parentElement.classList.toggle('collapsed')">
           <span class="ac-group-icon">${this._getTypeIcon(type)}</span>
           <span class="ac-group-label">${this._getTypeLabel(type)}</span>

@@ -18,6 +18,11 @@ class AutoClerkValidator {
   async init() {
     console.log('[AutoClerk] Initializing on section:', this.currentSection);
 
+    if (this.currentSection === 'unknown') {
+      console.log('[AutoClerk] Unsupported MAHADBT page detected. Skipping validator bootstrap.');
+      return;
+    }
+
     this.parser = new MAHADBTFormParser();
     this.uiInjector = new UIInjector();
 

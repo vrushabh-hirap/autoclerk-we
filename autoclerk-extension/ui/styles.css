@@ -28,23 +28,17 @@
   --ac-shadow:       0 20px 60px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.06);
   --ac-font:         'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* ====== PANEL DISABLED — hidden by design ====== */
-  display: none !important;
-
-
   /* Panel positioning & shape */
   position: fixed !important;
-  right: 20px !important;
-  top: 80px !important;
-  width: 360px !important;
-  max-height: 85vh !important;
+  right: 14px !important;
+  top: 82px !important;
+  width: min(340px, calc(100vw - 24px)) !important;
+  max-height: min(74vh, 680px) !important;
 
-  background: rgba(255,255,255,0.92) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid var(--ac-gold-border) !important;
-  border-radius: var(--ac-radius) !important;
-  box-shadow: var(--ac-shadow) !important;
+  background: #FFFFFF !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 34px rgba(2,6,23,0.14) !important;
   z-index: 2147483647 !important;
 
   font-family: var(--ac-font) !important;
@@ -77,8 +71,8 @@
 =================================================== */
 .ac-header {
   background: #FFFFFF !important;
-  border-bottom: 1px solid rgba(245,192,0,0.30) !important;
-  padding: 12px 14px !important;
+  border-bottom: 1px solid #EAECEF !important;
+  padding: 10px 12px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -99,8 +93,8 @@
 
 /* Logo container — golden tint circle */
 .ac-logo {
-  width: 30px !important;
-  height: 30px !important;
+  width: 26px !important;
+  height: 26px !important;
   background: var(--ac-gold-bg) !important;
   border: 1px solid var(--ac-gold-border) !important;
   border-radius: 8px !important;
@@ -117,7 +111,7 @@
 }
 
 .ac-title {
-  font-size: 14px !important;
+  font-size: 13px !important;
   font-weight: 700 !important;
   color: var(--ac-text) !important;
   letter-spacing: -0.2px !important;
@@ -125,7 +119,7 @@
 }
 
 .ac-subtitle {
-  font-size: 10px !important;
+  font-size: 9px !important;
   color: var(--ac-text-muted) !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
@@ -167,8 +161,8 @@
   overflow-y: auto !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px !important;
-  padding: 12px !important;
+  gap: 8px !important;
+  padding: 10px !important;
   scrollbar-width: thin !important;
   scrollbar-color: #E5E7EB transparent !important;
 }
@@ -193,7 +187,7 @@
   background: #FAFAFA !important;
   border: 1px solid var(--ac-border) !important;
   border-radius: var(--ac-radius-md) !important;
-  padding: 9px 12px !important;
+  padding: 7px 10px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -265,7 +259,7 @@
 }
 
 .ac-scanner-label {
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   color: var(--ac-text) !important;
   flex: 1 !important;
@@ -304,7 +298,7 @@
 
 /* Scan progress bar — golden fill */
 .ac-scan-track {
-  height: 4px !important;
+  height: 3px !important;
   background: #F3F4F6 !important;
   border-radius: 4px !important;
   overflow: hidden !important;
@@ -330,7 +324,7 @@
   background: #FAFAFA !important;
   border: 1px solid var(--ac-border) !important;
   border-radius: var(--ac-radius-md) !important;
-  padding: 11px 12px !important;
+  padding: 8px 10px !important;
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
@@ -356,7 +350,7 @@
 }
 
 .ac-status-icon {
-  font-size: 20px !important;
+  font-size: 16px !important;
   flex-shrink: 0 !important;
 }
 
@@ -365,13 +359,13 @@
 }
 
 .ac-status-text {
-  font-size: 13px !important;
+  font-size: 12px !important;
   font-weight: 600 !important;
   color: var(--ac-text) !important;
 }
 
 .ac-status-sub {
-  font-size: 11px !important;
+  font-size: 10px !important;
   color: var(--ac-text-muted) !important;
   margin-top: 1px !important;
 }
@@ -394,13 +388,13 @@
 =================================================== */
 .ac-pills {
   display: flex !important;
-  gap: 6px !important;
+  gap: 5px !important;
 }
 
 .ac-pill {
   flex: 1 !important;
   border-radius: var(--ac-radius-pill) !important;
-  padding: 7px 6px !important;
+  padding: 5px 4px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -424,7 +418,7 @@
 }
 
 .ac-pill-count {
-  font-size: 17px !important;
+  font-size: 15px !important;
   font-weight: 800 !important;
   line-height: 1 !important;
 }
@@ -434,7 +428,7 @@
 .ac-pill-info     .ac-pill-count { color: var(--ac-success)  !important; }
 
 .ac-pill-label {
-  font-size: 9px !important;
+  font-size: 8px !important;
   font-weight: 700 !important;
   color: var(--ac-text-muted) !important;
   text-transform: uppercase !important;
@@ -447,7 +441,12 @@
 .ac-errors-container {
   display: flex !important;
   flex-direction: column !important;
-  gap: 8px !important;
+  gap: 6px !important;
+}
+
+.ac-errors-list {
+  max-height: 230px !important;
+  overflow-y: auto !important;
 }
 
 .ac-errors-header {
@@ -495,7 +494,7 @@
   display: flex !important;
   align-items: center !important;
   gap: 7px !important;
-  padding: 9px 10px !important;
+  padding: 7px 9px !important;
   background: #FAFAFA !important;
   cursor: pointer !important;
   font-size: 12px !important;
@@ -557,7 +556,7 @@
    INDIVIDUAL ERROR ITEMS — colored left-border accent
 =================================================== */
 .ac-error-item {
-  padding: 9px 10px !important;
+  padding: 7px 8px !important;
   border-left: 3px solid transparent !important;
   border-bottom: 1px solid var(--ac-border) !important;
   transition: background 0.12s !important;
@@ -585,14 +584,14 @@
 }
 
 .ac-error-field {
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   color: var(--ac-text) !important;
   margin-bottom: 2px !important;
 }
 
 .ac-error-msg {
-  font-size: 11px !important;
+  font-size: 10px !important;
   color: var(--ac-text-muted) !important;
   line-height: 1.4 !important;
 }
@@ -636,16 +635,16 @@
 =================================================== */
 .ac-actions {
   display: flex !important;
-  gap: 8px !important;
+  gap: 6px !important;
   padding-top: 2px !important;
 }
 
 .ac-btn {
   flex: 1 !important;
-  height: 36px !important;
+  height: 34px !important;
   padding: 0 12px !important;
   border-radius: var(--ac-radius-md) !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   display: flex !important;
@@ -685,7 +684,6 @@
 .ac-btn-primary:hover:not(:disabled) {
   background: var(--ac-gold-dark) !important;
   border-color: var(--ac-gold-dark) !important;
-  transform: translateY(-1px) !important;
   box-shadow: 0 6px 18px rgba(245,192,0,0.30) !important;
 }
 
@@ -735,4 +733,13 @@
   font-weight: 500 !important;
   display: block !important;
   font-family: var(--ac-font) !important;
+}
+
+@media (max-width: 1080px) {
+  #autoclerk-validation-panel {
+    top: 72px !important;
+    right: 8px !important;
+    width: min(320px, calc(100vw - 16px)) !important;
+    max-height: 72vh !important;
+  }
 }
