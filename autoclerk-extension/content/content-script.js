@@ -22,11 +22,7 @@ class AutoClerkValidator {
     this.uiInjector = new UIInjector();
 
     // Inject the UI panel
-    // this.uiInjector.inject();
-    
-    // Force remove existing panel if any (cleaning up from previous versions)
-    const existing = document.getElementById('autoclerk-validation-panel');
-    if (existing) existing.remove();
+    this.uiInjector.inject();
     this.uiInjector.updateSection(this.getSectionDisplayName());
 
     // Restore session
@@ -143,6 +139,8 @@ class AutoClerkValidator {
     chrome.runtime.sendMessage({
       action: 'updateBadge',
       errorCount: this.errors.filter(e => e.severity === 'critical').length
+    }, () => {
+      void chrome.runtime.lastError;
     });
   }
 
@@ -193,10 +191,10 @@ class AutoClerkValidator {
       await this.saveSession(session);
 
       // Check for Supabase session to push to cloud
-      chrome.storage.local.get(['sbSession'], (result) => {
+      chrome.storage.local.get(['sbSession', 'accessToken', 'userId'], (result) => {
         const sbSession = result.sbSession;
-        const accessToken = sbSession?.access_token || sbSession?.session?.access_token;
-        const user = sbSession?.user || sbSession?.session?.user;
+        const accessToken = result.accessToken || sbSession?.access_token || sbSession?.session?.access_token;
+        const user = sbSession?.user || sbSession?.session?.user || (result.userId ? { id: result.userId } : null);
 
         if (accessToken && user && user.id) {
           // Push to background script for securely hitting Supabase

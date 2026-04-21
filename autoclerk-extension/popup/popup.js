@@ -4,33 +4,91 @@
 const SUPABASE_URL = 'https://vuvrhlvfvcfkxhsqqxik.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1dnJobHZmdmNma3hoc3FxeGlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyOTYzMTgsImV4cCI6MjA5MDg3MjMxOH0.DCS9215sS1uF7bitZuqokYEXt-R8bVKswEJ-_votOVI';
 const WEB_APP_DOMAIN = 'autocleark.vercel.app';
+const WEB_APP_ORIGIN = `https://${WEB_APP_DOMAIN}`;
+const AUTH_STORAGE_KEYS = [
+  'accessToken',
+  'refreshToken',
+  'userId',
+  'userEmail',
+  'userFullName',
+  'userAvatarUrl',
+  'sbSession',
+  'loginError'
+];
+const AUTH_STORAGE_KEY_SET = new Set([...AUTH_STORAGE_KEYS, 'loginTabId']);
+
+function storageGet(keys) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, resolve);
+  });
+}
+
+function storageSet(values) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set(values, resolve);
+  });
+}
+
+function storageRemove(keys) {
+  return new Promise((resolve) => {
+    chrome.storage.local.remove(keys, resolve);
+  });
+}
+
+async function sendMessageToTab(tabId, message) {
+  return new Promise((resolve) => {
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) {
+        resolve({ ok: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+      resolve({ ok: true, response });
+    });
+  });
+}
 
 // ===== Inlined Auth Helpers (from lib/supabase-auth.js) =====
 const SupabaseAuth = {
-  async getSession() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['sbSession'], (result) => {
-        resolve(result.sbSession || null);
-      });
-    });
+  async getStoredAuth() {
+    return storageGet(AUTH_STORAGE_KEYS);
   },
 
-  async saveSession(session) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ sbSession: session }, resolve);
-    });
+  async getSession() {
+    const stored = await this.getStoredAuth();
+    if (stored.sbSession) return stored.sbSession;
+    if (!stored.accessToken) return null;
+
+    return {
+      access_token: stored.accessToken,
+      refresh_token: stored.refreshToken || '',
+      user: {
+        id: stored.userId || '',
+        email: stored.userEmail || '',
+        user_metadata: {
+          full_name: stored.userFullName || '',
+          avatar_url: stored.userAvatarUrl || ''
+        }
+      }
+    };
   },
 
   async logout() {
     return new Promise((resolve) => {
-      chrome.storage.local.remove(['sbSession'], resolve);
+      chrome.runtime.sendMessage({ action: 'authSignOut' }, async (response) => {
+        if (chrome.runtime.lastError || !response?.success) {
+          await storageRemove([...AUTH_STORAGE_KEYS, 'loginTabId']);
+        }
+        resolve();
+      });
     });
   },
 
   async getUserDetails(userId, accessToken) {
+    if (!userId || !accessToken) return null;
+
     try {
       const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/user_details?id=eq.${userId}&select=*`,
+        `${SUPABASE_URL}/rest/v1/user_details?id=eq.${encodeURIComponent(userId)}&select=id,email,full_name,avatar_url,created_at&limit=1`,
         {
           method: 'GET',
           headers: {
@@ -50,24 +108,57 @@ const SupabaseAuth = {
   },
 
   async checkAuth() {
-    const session = await this.getSession();
-    if (!session) return null;
+    const stored = await this.getStoredAuth();
+    const session = stored.sbSession || null;
+    const sessionUser = session?.user || session?.session?.user || null;
+    const accessToken = stored.accessToken || session?.access_token || session?.session?.access_token || '';
+    const refreshToken = stored.refreshToken || session?.refresh_token || session?.session?.refresh_token || '';
+    const userId = stored.userId || sessionUser?.id || '';
+    const userEmail = stored.userEmail || sessionUser?.email || '';
 
-    // Supabase stores the session with either access_token directly or nested
-    const accessToken = session.access_token || session?.session?.access_token;
-    const user = session.user || session?.session?.user;
+    if (!accessToken || !userEmail) return null;
 
-    if (!accessToken || !user) return null;
+    let profile = {
+      full_name: stored.userFullName || sessionUser?.user_metadata?.full_name || sessionUser?.user_metadata?.name || 'User',
+      avatar_url: stored.userAvatarUrl || sessionUser?.user_metadata?.avatar_url || sessionUser?.user_metadata?.picture || '',
+      email: userEmail
+    };
 
-    const profile = await this.getUserDetails(user.id, accessToken);
+    // Fill missing profile fields from user_details table when needed.
+    if ((!profile.full_name || !profile.avatar_url) && userId) {
+      const details = await this.getUserDetails(userId, accessToken);
+      if (details) {
+        profile = {
+          full_name: details.full_name || profile.full_name || 'User',
+          avatar_url: details.avatar_url || profile.avatar_url || '',
+          email: details.email || profile.email
+        };
+
+        await storageSet({
+          userFullName: profile.full_name,
+          userAvatarUrl: profile.avatar_url,
+          userEmail: profile.email
+        });
+      }
+    }
+
+    const normalizedSession = session || {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        id: userId,
+        email: userEmail,
+        user_metadata: {
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url
+        }
+      }
+    };
 
     return {
-      session,
-      profile: profile || {
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
-        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-        email: user.email
-      }
+      session: normalizedSession,
+      profile,
+      loginError: stored.loginError || null
     };
   }
 };
@@ -88,17 +179,7 @@ const MAHADBT_BASE = 'https://mahadbt.maharashtra.gov.in/';
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
-
-  // Listen for storage changes for real-time updates
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.acSession) {
-      checkCurrentTab();
-      loadErrorLog();
-    }
-    if (changes.sbSession) {
-      updateAuthState();
-    }
-  });
+  setupRealtimeAuthListeners();
 
   // Initial load
   await updateAuthState();
@@ -124,6 +205,37 @@ function setupTabs() {
       btn.classList.add('active');
       document.getElementById(`content-${tab}`)?.classList.add('active');
     });
+  });
+}
+
+function setupRealtimeAuthListeners() {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local') return;
+
+    if (changes.acSession) {
+      void checkCurrentTab();
+      void loadErrorLog();
+    }
+
+    const hasAuthChange = Object.keys(changes).some((key) => AUTH_STORAGE_KEY_SET.has(key));
+    if (hasAuthChange) {
+      void updateAuthState();
+    }
+  });
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === 'loginFailed') {
+      setAuthStatus(message.error || 'Login failed. Please try again.', true);
+      void updateAuthState();
+    }
+    if (message.action === 'loginSuccess') {
+      setAuthStatus('');
+      void updateAuthState();
+    }
+    if (message.action === 'authSignedOut') {
+      setAuthStatus('');
+      void updateAuthState();
+    }
   });
 }
 
@@ -367,26 +479,44 @@ async function loadErrorLog() {
 function setupActionButtons() {
   document.getElementById('btn-force-refresh')?.addEventListener('click', async () => {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tabs.length > 0) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'forceUpdate' });
-      // Visual feedback
-      const btn = document.getElementById('btn-force-refresh');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '⏳ Scanning...';
-      setTimeout(() => btn.innerHTML = originalText, 1000);
+    const tab = tabs[0];
+    if (!tab?.id) return;
+
+    const sendResult = await sendMessageToTab(tab.id, { action: 'forceUpdate' });
+    if (!sendResult.ok) {
+      console.warn('[AutoClerk] forceUpdate message failed:', sendResult.error);
+      return;
     }
+
+    // Visual feedback
+    const btn = document.getElementById('btn-force-refresh');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Scanning...';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+    }, 1000);
   });
 
   document.getElementById('btn-save-errors-popup')?.addEventListener('click', async () => {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tabs.length > 0) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'triggerSave' });
-      // Visual feedback
-      const btn = document.getElementById('btn-save-errors-popup');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '💾 Triggered!';
-      setTimeout(() => btn.innerHTML = originalText, 1000);
+    const tab = tabs[0];
+    if (!tab?.id) return;
+
+    const sendResult = await sendMessageToTab(tab.id, { action: 'triggerSave' });
+    if (!sendResult.ok) {
+      console.warn('[AutoClerk] triggerSave message failed:', sendResult.error);
+      return;
     }
+
+    // Visual feedback
+    const btn = document.getElementById('btn-save-errors-popup');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '💾 Triggered!';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+    }, 1000);
   });
 
 }
@@ -411,6 +541,22 @@ async function getSession() {
 
 // ===== Auth & Profile Logic =====
 
+function setAuthStatus(message, isError = false) {
+  const statusEl = document.getElementById('auth-status-message');
+  if (!statusEl) return;
+
+  if (!message) {
+    statusEl.textContent = '';
+    statusEl.style.display = 'none';
+    statusEl.classList.remove('error');
+    return;
+  }
+
+  statusEl.textContent = message;
+  statusEl.style.display = 'block';
+  statusEl.classList.toggle('error', isError);
+}
+
 async function updateAuthState() {
   const authSignedOut = document.getElementById('auth-signed-out');
   const authSignedIn = document.getElementById('auth-signed-in');
@@ -426,6 +572,7 @@ async function updateAuthState() {
     if (auth && auth.session) {
       authSignedOut.style.display = 'none';
       authSignedIn.style.display = 'flex';
+      setAuthStatus('');
 
       const nameEl = document.getElementById('user-name');
       const emailEl = document.getElementById('user-email');
@@ -453,6 +600,14 @@ async function updateAuthState() {
     } else {
       authSignedOut.style.display = 'flex';
       authSignedIn.style.display = 'none';
+      const { loginError, loginTabId } = await storageGet(['loginError', 'loginTabId']);
+      if (loginError) {
+        setAuthStatus(loginError, true);
+      } else if (loginTabId) {
+        setAuthStatus('Login in progress in the opened tab...', false);
+      } else {
+        setAuthStatus('');
+      }
 
       const backendPlaceholder = document.getElementById('backend-placeholder');
       if (backendPlaceholder) {
@@ -474,13 +629,26 @@ async function updateAuthState() {
 }
 
 function handleLogin() {
-  const loginUrl = `https://${WEB_APP_DOMAIN}/login`;
-  window.open(loginUrl, '_blank');
+  const loginUrl = `${WEB_APP_ORIGIN}/login`;
+
+  chrome.tabs.create({ url: loginUrl, active: true }, async (tab) => {
+    if (chrome.runtime.lastError || !tab?.id) {
+      setAuthStatus('Could not open login tab. Please try again.', true);
+      return;
+    }
+
+    await storageSet({
+      loginTabId: tab.id,
+      loginError: null
+    });
+    setAuthStatus('Login tab opened. Complete Google sign-in there.', false);
+  });
 }
 
 async function handleLogout() {
   if (confirm('Are you sure you want to sign out?')) {
     await SupabaseAuth.logout();
+    setAuthStatus('');
     await updateAuthState();
   }
 }

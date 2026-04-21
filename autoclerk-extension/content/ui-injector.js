@@ -210,10 +210,13 @@ class UIInjector {
     const text = document.getElementById('ac-status-text');
     const sub = document.getElementById('ac-status-sub');
     const banner = document.getElementById('ac-status-banner');
+    const countCritical = document.getElementById('ac-count-critical');
+    const countWarning = document.getElementById('ac-count-warning');
+    const countInfo = document.getElementById('ac-count-info');
 
-    document.getElementById('ac-count-critical').textContent = critical.length;
-    document.getElementById('ac-count-warning').textContent = warnings.length;
-    document.getElementById('ac-count-info').textContent = infos.length;
+    if (countCritical) countCritical.textContent = String(critical.length);
+    if (countWarning) countWarning.textContent = String(warnings.length);
+    if (countInfo) countInfo.textContent = String(infos.length);
 
     if (icon && text && sub && banner) {
       if (errors.length === 0) {
